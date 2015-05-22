@@ -157,6 +157,8 @@
 #endif
 #include <AP_LandingGear.h>     // Landing Gear library
 #include <AP_Terrain.h>
+#include <AC_PrecLand.h>
+#include <AP_IRLock.h>
 
 // AP_HAL to Arduino compatibility layer
 #include "compat.h"
@@ -349,6 +351,7 @@ static union {
         enum HomeState home_state   : 2; // 18,19   // home status (unset, set, locked)
         uint8_t using_interlock     : 1; // 20      // aux switch motor interlock function is in use
         uint8_t motor_emergency_stop: 1; // 21      // motor estop switch, shuts off motors when enabled
+        uint8_t land_repo_active    : 1; // 24  // true if pilot has applied roll or pitch inputs during landing (used to disable automatic precision landing)
     };
     uint32_t value;
 } ap;
@@ -689,6 +692,13 @@ AP_Terrain terrain(ahrs, mission, rally);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
+// Precision Landing
+////////////////////////////////////////////////////////////////////////////////
+#if PRECISION_LANDING == ENABLED
+static AC_PrecLand precland(ahrs, inertial_nav, g.pi_precland, MAIN_LOOP_SECONDS);
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
 // function definitions to keep compiler from complaining about undeclared functions
 ////////////////////////////////////////////////////////////////////////////////
 static bool pre_arm_checks(bool display_failure);
@@ -733,6 +743,9 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { three_hz_loop,       133,     75 },   // 11
     { compass_accumulate,    8,    100 },   // 12
     { barometer_accumulate,  8,     90 },   // 13
+#if PRECISION_LANDING == ENABLED
+    { update_precland,       8,     50 },
+#endif
 #if FRAME_CONFIG == HELI_FRAME
     { check_dynamic_flight,  8,     75 },
 #endif
