@@ -32,12 +32,13 @@ public:
     bool get_angle_to_target(float &x_angle_rad, float &y_angle_rad) const;
 
     // handle_msg - parses a mavlink message from the companion computer
-    uint8_t AC_PrecLand_Companion::handle_msg(mavlink_message_t* msg);
+    void AC_PrecLand_Companion::handle_msg(mavlink_message_t* msg);
 
 private:
 
     // output from camera
     Vector2f                    _bf_angle_to_target;// last body-frame angle to target
+    float                       _distance_to_target;//distance from the camera to target
 
     //Indicator to notify if a new data from the camera has been received
     bool                        _new_estimate;

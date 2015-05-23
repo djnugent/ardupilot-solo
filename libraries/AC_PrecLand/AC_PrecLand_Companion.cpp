@@ -44,10 +44,14 @@ bool AC_PrecLand_Companion::get_angle_to_target(float &x_angle_rad, float &y_ang
     return false;
 }
 
-uint8_t AC_PrecLand_Companion::handle_msg(mavlink_message_t* msg){
+void AC_PrecLand_Companion::handle_msg(mavlink_message_t* msg){
 
-	//TODO: parse mavlink message
+	//parse mavlink message
+	__mavlink_landing_target_t packet;
+    mavlink_msg_landing_target_decode(msg, &packet);
+    _bf_angle_to_target.x = packet.angle_x;
+    _bf_angle_to_target.y = packet.angle_y;
+    _distance_to_target = packet.distance;
 
-	_new_estimate  = true;
-	return MAV_RESULT_FAILED;
+	_new_estimate = true;
 }
