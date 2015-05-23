@@ -1,6 +1,6 @@
 // MESSAGE LANDING_TARGET PACKING
 
-#define MAVLINK_MSG_ID_LANDING_TARGET 180
+#define MAVLINK_MSG_ID_LANDING_TARGET 230
 
 typedef struct __mavlink_landing_target_t
 {
@@ -12,10 +12,10 @@ typedef struct __mavlink_landing_target_t
 } mavlink_landing_target_t;
 
 #define MAVLINK_MSG_ID_LANDING_TARGET_LEN 14
-#define MAVLINK_MSG_ID_180_LEN 14
+#define MAVLINK_MSG_ID_230_LEN 14
 
 #define MAVLINK_MSG_ID_LANDING_TARGET_CRC 255
-#define MAVLINK_MSG_ID_180_CRC 255
+#define MAVLINK_MSG_ID_230_CRC 255
 
 
 
