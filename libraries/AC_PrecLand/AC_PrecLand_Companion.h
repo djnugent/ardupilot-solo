@@ -31,9 +31,18 @@ public:
     //  y_angle_rad : body-frame pitch direction, postiive = target is forward (looking down)
     bool get_angle_to_target(float &x_angle_rad, float &y_angle_rad) const;
 
+    // handle_msg - parses a mavlink message from the companion computer
+    uint8_t AC_PrecLand_Companion::handle_msg(mavlink_message_t* msg);
+
 private:
 
-    mavlink_channel_t   _chan;      // mavlink channel used to communicate with companion computer
+    // output from camera
+    Vector2f                    _bf_angle_to_target;// last body-frame angle to target
+
+    //Indicator to notify if a new data from the camera has been received
+    bool                        _new_estimate;
+
+    mavlink_channel_t          _chan;      // mavlink channel used to communicate with companion computer
 
 };
 #endif	// __AC_PRECLAND_COMPANION_H__
