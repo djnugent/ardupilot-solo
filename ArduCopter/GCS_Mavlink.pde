@@ -1545,7 +1545,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
 #endif
 
-#if PRECISION_LAND == ENABLED
+#if PRECISION_LANDING == ENABLED
         case MAVLINK_MSG_ID_LANDING_TARGET:
             // configure or release parachute
             result = MAV_RESULT_ACCEPTED;
