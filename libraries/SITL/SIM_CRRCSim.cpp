@@ -129,6 +129,8 @@ void CRRCSim::recv_fdm(const struct sitl_input &input)
     position.y = posdelta.y;
     position.z = -pkt.altitude;
 
+    airspeed = pkt.airspeed;
+
     dcm.from_euler(pkt.roll, pkt.pitch, pkt.yaw);
 
     // auto-adjust to crrcsim frame rate

@@ -34,6 +34,7 @@ extern const AP_HAL::HAL& hal;
 #pragma GCC diagnostic ignored "-Wunused-result"
 
 #define DEBUG_JSBSIM 1
+#define FEET_TO_METERS 0.3048f
 
 /*
   constructor
@@ -71,8 +72,6 @@ bool JSBSim::create_templates(void)
     control_port = 5505 + instance*10;
     fdm_port = 5504 + instance*10;
 
-
-    asprintf(&autotest_dir, SKETCHBOOK "/Tools/autotest");
     asprintf(&jsbsim_script, "%s/jsbsim_start_%u.xml", autotest_dir, instance);
     asprintf(&jsbsim_fgout,  "%s/jsbsim_fgout_%u.xml", autotest_dir, instance);
 
@@ -122,7 +121,7 @@ bool JSBSim::create_templates(void)
         hal.scheduler->panic("Unable to create jsbsim fgout script");
     }
     fprintf(f, "<?xml version=\"1.0\"?>\n" 
-            "<output name=\"localhost\" type=\"FLIGHTGEAR\" port=\"%u\" protocol=\"udp\" rate=\"1000\"/>\n",
+            "<output name=\"127.0.0.1\" type=\"FLIGHTGEAR\" port=\"%u\" protocol=\"udp\" rate=\"1000\"/>\n",
             fdm_port);
     fclose(f);
 
@@ -336,8 +335,12 @@ void JSBSim::send_servos(const struct sitl_input &input)
              "set fcs/elevator-cmd-norm %f\n"
              "set fcs/rudder-cmd-norm %f\n"
              "set fcs/throttle-cmd-norm %f\n"
+             "set atmosphere/psiw-rad %f\n"
+             "set atmosphere/wind-mag-fps %f\n"
              "step\n",
-             aileron, elevator, rudder, throttle);
+             aileron, elevator, rudder, throttle,
+             radians(input.wind.direction),
+             input.wind.speed / FEET_TO_METERS);
     ssize_t buflen = strlen(buf);
     ssize_t sent = sock_control.send(buf, buflen);
     free(buf);
@@ -352,8 +355,6 @@ void JSBSim::send_servos(const struct sitl_input &input)
         fprintf(stderr, "Failed to send all bytes on control socket\n");
     }
 }
-
-#define FEET_TO_METERS 0.3048f
 
 /* nasty hack ....
    JSBSim sends in little-endian
@@ -402,6 +403,7 @@ void JSBSim::recv_fdm(const struct sitl_input &input)
     location.lng = degrees(fdm.longitude) * 1.0e7;
     location.alt = fdm.agl*100 + home.alt;
     dcm.from_euler(fdm.phi, fdm.theta, fdm.psi);
+    airspeed = fdm.vcas * FEET_TO_METERS;
 
     // assume 1kHz for now
     time_now_us += 1000;
@@ -418,7 +420,6 @@ void JSBSim::drain_control_socket()
             if (errno != EAGAIN && errno != EWOULDBLOCK) {
                 fprintf(stderr, "error recv on control socket: %s",
                         strerror(errno));
-                exit(1);
             }
         } else {
             // fprintf(stderr, "received from control socket: %s\n", buf);
