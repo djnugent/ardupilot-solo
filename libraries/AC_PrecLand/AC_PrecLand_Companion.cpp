@@ -14,7 +14,7 @@ AC_PrecLand_Companion::AC_PrecLand_Companion(const AC_PrecLand& frontend, AC_Pre
 void AC_PrecLand_Companion::init()
 {
     // set healthy
-    _state.healthy = true;
+    //_state.healthy = true;
     _new_estimate = false;
 }
 
@@ -52,6 +52,6 @@ void AC_PrecLand_Companion::handle_msg(mavlink_message_t* msg){
     _bf_angle_to_target.x = packet.angle_x;
     _bf_angle_to_target.y = packet.angle_y;
     _distance_to_target = packet.distance;
-
+    _state.healthy = true;
 	_new_estimate = true;
 }

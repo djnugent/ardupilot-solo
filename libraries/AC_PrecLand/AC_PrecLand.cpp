@@ -74,10 +74,12 @@ void AC_PrecLand::init()
         case PRECLAND_TYPE_COMPANION:
             _backend = new AC_PrecLand_Companion(*this, _backend_state);
             break;
+        #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
         // IR Lock
         case PRECLAND_TYPE_IRLOCK:
             _backend = new AC_PrecLand_IRLock(*this, _backend_state);
             break;
+        #endif //CONFIG_HAL_BOARD == HAL_BOARD_PX4
     }
 
     // init backend
@@ -160,7 +162,7 @@ void AC_PrecLand::calc_angles_and_pos(float alt_above_terrain_cm)
 void AC_PrecLand::handle_msg(mavlink_message_t* msg){
 
     // run backend update
-    if (_backend != NULL && (enum PrecLandType)(_type.get()) == PRECLAND_TYPE_COMPANION) {
+    if (_backend != NULL) {
         // cast type and handle msg
        _backend->handle_msg(msg);
     }
