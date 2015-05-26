@@ -12,14 +12,14 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] PROGMEM = {
     // @Description: Precision Land enabled/disabled and behaviour
     // @Values: 0:Disabled, 1:Enabled Always Land, 2:Enabled Strict
     // @User: Advanced
-    AP_GROUPINFO("ENABLED", 0, AC_PrecLand, _enabled, 0),
+    AP_GROUPINFO("ENABLED", 0, AC_PrecLand, _enabled, 1),
 
     // @Param: TYPE
     // @DisplayName: Precision Land Type
     // @Description: Precision Land Type
     // @Values: 0:None, 1:CompanionComputer, 2:IRLock
     // @User: Advanced
-    AP_GROUPINFO("TYPE",    1, AC_PrecLand, _type, 0),
+    AP_GROUPINFO("TYPE",    1, AC_PrecLand, _type, 1),
 
     // @Param: SPEED
     // @DisplayName: Precision Land horizontal speed maximum in cm/s
@@ -154,4 +154,14 @@ void AC_PrecLand::calc_angles_and_pos(float alt_above_terrain_cm)
     _target_pos_offset.z = 0;  // not used
 
     _have_estimate = true;
+}
+
+// handle_msg - Process a LANDING_TARGET mavlink message
+void AC_PrecLand::handle_msg(mavlink_message_t* msg){
+
+    // run backend update
+    if (_backend != NULL && (enum PrecLandType)(_type.get()) == PRECLAND_TYPE_COMPANION) {
+        // cast type and handle msg
+       _backend->handle_msg(msg);
+    }
 }

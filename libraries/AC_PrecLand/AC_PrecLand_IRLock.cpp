@@ -35,3 +35,8 @@ bool AC_PrecLand_IRLock::get_angle_to_target(float &x_angle_rad, float &y_angle_
 {
     return irlock.get_angle_to_target(x_angle_rad, y_angle_rad);
 }
+
+// handle_msg - parses a mavlink message from the companion computer
+void handle_msg(mavlink_message_t* msg){
+	//nothing to do
+}
