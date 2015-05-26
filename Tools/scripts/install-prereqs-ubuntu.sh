@@ -63,7 +63,8 @@ sudo pip -q install $PYTHON_PKGS
 
 
 if [ ! -d PX4Firmware ]; then
-    git clone https://github.com/diydrones/PX4Firmware.git
+    git clone https://github.com/rmackay9/PX4Firmware.git
+    git checkout precland6
 fi
 
 if [ ! -d PX4NuttX ]; then
