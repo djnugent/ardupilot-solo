@@ -40,3 +40,4 @@ bool AC_PrecLand_IRLock::get_angle_to_target(float &x_angle_rad, float &y_angle_
 void handle_msg(mavlink_message_t* msg){
 	//nothing to do
 }
+

@@ -84,14 +84,13 @@ static void land_gps_run()
             update_simple_mode();
 
             // process pilot's roll and pitch input
-            roll_control = channel_roll->control_in;
-            pitch_control = channel_pitch->control_in;
+            roll_control = g.rc_1.control_in;
+            pitch_control = g.rc_2.control_in;
 
             // record if pilot has overriden roll or pitch
             if (roll_control != 0 || pitch_control != 0) {
                 ap.land_repo_active = true;
             }
-
         }
 
         // get pilot's desired yaw rate

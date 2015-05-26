@@ -45,5 +45,6 @@ private:
 
     mavlink_channel_t          _chan;      // mavlink channel used to communicate with companion computer
 
+
 };
 #endif	// __AC_PRECLAND_COMPANION_H__
