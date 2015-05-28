@@ -907,7 +907,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     //DEBUG REMOVE FOR PR
     if(msg->msgid != 0){
-        cliSerial->printf_P(PSTR(Got Message: %u),msg->msgid);
+        cliSerial->printf_P(PSTR("Got Message: %u"),msg->msgid);
     }
 
     switch (msg->msgid) {
