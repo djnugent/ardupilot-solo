@@ -905,11 +905,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 {
     uint8_t result = MAV_RESULT_FAILED;         // assume failure.  Each messages id is responsible for return ACK or NAK if required
 
-    //DEBUG REMOVE FOR PR
-    if(msg->msgid != 0){
-        cliSerial->printf_P(PSTR("Got Message: %u"),msg->msgid);
-    }
-
     switch (msg->msgid) {
 
     case MAVLINK_MSG_ID_HEARTBEAT:      // MAV ID: 0
@@ -1554,6 +1549,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         case MAVLINK_MSG_ID_LANDING_TARGET:
             // configure or release parachute
             result = MAV_RESULT_ACCEPTED;
+            //DEBUG REMOVE FOR PR
+            //cliSerial->printf_P(PSTR("Got Landing target!!!"));
             precland.handle_msg(msg);
 #endif
 
