@@ -53,7 +53,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] PROGMEM = {
     AP_GROUPINFO("LOIT_SPEED",  4, AC_WPNav, _loiter_speed_cms, WPNAV_LOITER_SPEED),
 
     // @Param: ACCEL
-    // @DisplayName: Waypoint Acceleration 
+    // @DisplayName: Waypoint Acceleration
     // @Description: Defines the horizontal acceleration in cm/s/s used during missions
     // @Units: cm/s/s
     // @Range: 50 500
@@ -166,6 +166,21 @@ void AC_WPNav::init_loiter_target(const Vector3f& position, bool reset_I)
     _pilot_accel_rgt_cms = 0;
 }
 
+/// shift_loiter_target - shifts the loiter target by the given pos_adjustment
+///     used by precision landing to adjust horizontal position target
+void AC_WPNav::shift_loiter_target(const Vector3f &pos_adjustment)
+{
+    Vector3f new_target = _pos_control.get_pos_target() + pos_adjustment;
+
+    // move pos controller target
+    _pos_control.set_xy_target(new_target.x, new_target.y);
+
+    // disable feed forward
+    if (fabsf(pos_adjustment.x) > 0.0f || fabsf(pos_adjustment.y) > 0.0f) {
+        _pos_control.freeze_ff_xy();
+    }
+}
+
 /// init_loiter_target - initialize's loiter position and feed-forward velocity from current pos and velocity
 void AC_WPNav::init_loiter_target()
 {
@@ -251,12 +266,12 @@ void AC_WPNav::calc_loiter_desired_velocity(float nav_dt, float ekfGndSpdLimit)
     // constrain and scale the desired acceleration
     float des_accel_change_total = pythagorous2(des_accel_diff.x, des_accel_diff.y);
     float accel_change_max = _loiter_jerk_max_cmsss * nav_dt;
-    
+
     if (_loiter_jerk_max_cmsss > 0.0f && des_accel_change_total > accel_change_max && des_accel_change_total > 0.0f) {
         des_accel_diff.x = accel_change_max * des_accel_diff.x/des_accel_change_total;
         des_accel_diff.y = accel_change_max * des_accel_diff.y/des_accel_change_total;
     }
-    
+
     // adjust the desired acceleration
     _loiter_desired_accel += des_accel_diff;
 
