@@ -95,6 +95,9 @@ public:
     /// get_loiter_bearing_to_target - get bearing to loiter target in centi-degrees
     int32_t get_loiter_bearing_to_target() const;
 
+    /// get_loiter_target - returns loiter target position
+    const Vector3f& get_loiter_target() const { return _pos_control.get_pos_target(); }
+
     /// update_loiter - run the loiter controller - should be called at 10hz
     void update_loiter(float ekfGndSpdLimit, float ekfNavVelGainScaler);
 
