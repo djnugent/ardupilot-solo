@@ -102,7 +102,7 @@
 #endif
 #include <AP_LandingGear.h>     // Landing Gear library
 #include <AP_Terrain.h>
-#if PRECISION_LAND = ENABLED
+#if PRECISION_LANDING == ENABLED
 #include <AC_PrecLand.h>
 #endif
 
