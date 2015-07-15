@@ -435,6 +435,46 @@ void Copter::Log_Write_MotBatt()
     DataFlash.WriteBlock(&pkt_mot, sizeof(pkt_mot));
 }
 
+// precision landing logging
+struct PACKED log_Precland {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    uint8_t healthy;
+    float bf_angle_x;
+    float bf_angle_y;
+    float ef_angle_x;
+    float ef_angle_y;
+    float pos_x;
+    float pos_y;
+};
+
+// Write a precision land packet
+void Copter::Log_Write_Precland()
+{
+ #if PRECISION_LANDING == ENABLED
+    // exit immediately if not enabled
+    if (!copter.precland.enabled()) {
+        return;
+    }
+
+    const Vector2f &bf_angle = copter.precland.last_bf_angle_to_target();
+    const Vector2f &ef_angle = copter.precland.last_ef_angle_to_target();
+    const Vector3f &target_pos_ofs = copter.precland.last_target_pos_offset();
+    struct log_Precland pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_PRECLAND_MSG),
+        time_ms         : hal.scheduler->millis(),
+        healthy         : copter.precland.healthy(),
+        bf_angle_x      : degrees(bf_angle.x),
+        bf_angle_y      : degrees(bf_angle.y),
+        ef_angle_x      : degrees(ef_angle.x),
+        ef_angle_y      : degrees(ef_angle.y),
+        pos_x           : target_pos_ofs.x,
+        pos_y           : target_pos_ofs.y
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+ #endif     // PRECISION_LANDING == ENABLED
+}
+
 struct PACKED log_Startup {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -499,7 +539,7 @@ struct PACKED log_Data_UInt16t {
 };
 
 // Write an uint16_t data packet
-UNUSED_FUNCTION 
+UNUSED_FUNCTION
 void Copter::Log_Write_Data(uint8_t id, uint16_t value)
 {
     if (should_log(MASK_LOG_ANY)) {
@@ -687,34 +727,38 @@ const struct LogStructure Copter::log_structure[] PROGMEM = {
       "ATDE", "Qff",          "TimeUS,Angle,Rate" },
 #endif
     { LOG_PARAMTUNE_MSG, sizeof(log_ParameterTuning),
-      "PTUN", "QBfHHH",          "TimeUS,Param,TunVal,CtrlIn,TunLo,TunHi" },  
-    { LOG_OPTFLOW_MSG, sizeof(log_Optflow),       
+      "PTUN", "QBfHHH",          "TimeUS,Param,TunVal,CtrlIn,TunLo,TunHi" },
+    { LOG_OPTFLOW_MSG, sizeof(log_Optflow),
       "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY" },
-    { LOG_NAV_TUNING_MSG, sizeof(log_Nav_Tuning),       
+#if PRECISION_LANDING == ENABLED
+    { LOG_PRECLAND_MSG, sizeof(log_Precland),
+      "PL",   "IBffffff",   "TimeMS,Heal,bX,bY,eX,eY,pX,pY" },
+#endif
+    { LOG_NAV_TUNING_MSG, sizeof(log_Nav_Tuning),
       "NTUN", "Qffffffffff", "TimeUS,DPosX,DPosY,PosX,PosY,DVelX,DVelY,VelX,VelY,DAccX,DAccY" },
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),
       "CTUN", "Qhhfffecchh", "TimeUS,ThrIn,AngBst,ThrOut,DAlt,Alt,BarAlt,DSAlt,SAlt,DCRt,CRt" },
-    { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
+    { LOG_PERFORMANCE_MSG, sizeof(log_Performance),
       "PM",  "QHHIhBH",    "TimeUS,NLon,NLoop,MaxT,PMT,I2CErr,INSErr" },
     { LOG_RATE_MSG, sizeof(log_Rate),
       "RATE", "Qffffffffffff",  "TimeUS,RDes,R,ROut,PDes,P,POut,YDes,Y,YOut,ADes,A,AOut" },
     { LOG_MOTBATT_MSG, sizeof(log_MotBatt),
       "MOTB", "Qffff",  "TimeUS,LiftMax,BatVolt,BatRes,ThLimit" },
-    { LOG_STARTUP_MSG, sizeof(log_Startup),         
+    { LOG_STARTUP_MSG, sizeof(log_Startup),
       "STRT", "Q",            "TimeUS" },
-    { LOG_EVENT_MSG, sizeof(log_Event),         
+    { LOG_EVENT_MSG, sizeof(log_Event),
       "EV",   "QB",           "TimeUS,Id" },
-    { LOG_DATA_INT16_MSG, sizeof(log_Data_Int16t),         
+    { LOG_DATA_INT16_MSG, sizeof(log_Data_Int16t),
       "D16",   "QBh",         "TimeUS,Id,Value" },
-    { LOG_DATA_UINT16_MSG, sizeof(log_Data_UInt16t),         
+    { LOG_DATA_UINT16_MSG, sizeof(log_Data_UInt16t),
       "DU16",  "QBH",         "TimeUS,Id,Value" },
-    { LOG_DATA_INT32_MSG, sizeof(log_Data_Int32t),         
+    { LOG_DATA_INT32_MSG, sizeof(log_Data_Int32t),
       "D32",   "QBi",         "TimeUS,Id,Value" },
-    { LOG_DATA_UINT32_MSG, sizeof(log_Data_UInt32t),         
+    { LOG_DATA_UINT32_MSG, sizeof(log_Data_UInt32t),
       "DU32",  "QBI",         "TimeUS,Id,Value" },
-    { LOG_DATA_FLOAT_MSG, sizeof(log_Data_Float),         
+    { LOG_DATA_FLOAT_MSG, sizeof(log_Data_Float),
       "DFLT",  "QBf",         "TimeUS,Id,Value" },
-    { LOG_ERROR_MSG, sizeof(log_Error),         
+    { LOG_ERROR_MSG, sizeof(log_Error),
       "ERR",   "QBB",         "TimeUS,Subsys,ECode" },
     { LOG_HELI_MSG, sizeof(log_Heli),
       "HELI",  "Qhh",         "TimeUS,DRRPM,ERRPM" },
@@ -731,14 +775,14 @@ void Copter::Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page)
 
     cliSerial->println_P(PSTR(HAL_BOARD_NAME));
 
-    DataFlash.LogReadProcess(log_num, start_page, end_page, 
+    DataFlash.LogReadProcess(log_num, start_page, end_page,
                              FUNCTOR_BIND_MEMBER(&Copter::print_flight_mode, void, AP_HAL::BetterStream *, uint8_t),
                              cliSerial);
 }
 #endif // CLI_ENABLED
 
 // start a new log
-void Copter::start_logging() 
+void Copter::start_logging()
 {
     if (g.log_bitmask != 0) {
         if (!ap.logging_started) {

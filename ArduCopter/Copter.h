@@ -102,6 +102,9 @@
 #endif
 #include <AP_LandingGear.h>     // Landing Gear library
 #include <AP_Terrain.h>
+#if PRECISION_LAND = ENABLED
+#include <AC_PrecLand.h>
+#endif
 
 // AP_HAL to Arduino compatibility layer
 // Configuration
@@ -228,6 +231,7 @@ private:
             enum HomeState home_state   : 2; // 18,19   // home status (unset, set, locked)
             uint8_t using_interlock     : 1; // 20      // aux switch motor interlock function is in use
             uint8_t motor_emergency_stop: 1; // 21      // motor estop switch, shuts off motors when enabled
+            uint8_t land_repo_active    : 1; // 22      // true if pilot has applied roll or pitch inputs during landing (used to disable automatic precision landing)
         };
         uint32_t value;
     } ap;
@@ -484,7 +488,9 @@ private:
 #if AP_TERRAIN_AVAILABLE
     AP_Terrain terrain;
 #endif
-
+#if PRECISION_LANDING == ENABLED
+    AC_PrecLand precland;
+#endif
     // use this to prevent recursion during sensor init
     bool in_mavlink_delay;
 
@@ -852,6 +858,11 @@ private:
     void init_compass();
     void init_optflow();
     void update_optical_flow(void);
+#if PRECISION_LANDING == ENABLED
+    void init_precland();
+    void update_precland();
+    void Log_Write_Precland();
+#endif
     void read_battery(void);
     void read_receiver_rssi(void);
     void epm_update();

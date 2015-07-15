@@ -25,7 +25,7 @@ Copter::Copter(void) :
     ins_sample_rate(AP_InertialSensor::RATE_400HZ),
     flight_modes(&g.flight_mode1),
     sonar_enabled(true),
-    mission(ahrs, 
+    mission(ahrs,
             FUNCTOR_BIND_MEMBER(&Copter::start_command, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&Copter::verify_command, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&Copter::exit_mission, void)),
@@ -119,6 +119,9 @@ Copter::Copter(void) :
 #endif
 #if AP_TERRAIN_AVAILABLE
     terrain(ahrs, mission, rally),
+#endif
+#if PRECISION_LANDING == ENABLED
+    precland(ahrs, inertial_nav, g.pi_precland, MAIN_LOOP_SECONDS),
 #endif
     in_mavlink_delay(false),
     gcs_out_of_time(false),
