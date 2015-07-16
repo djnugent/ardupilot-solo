@@ -197,6 +197,10 @@ void Copter::init_ardupilot()
     // init the optical flow sensor
     init_optflow();
 
+#if PRECISION_LANDING == ENABLED
+    init_precland();
+#endif
+
 #if MOUNT == ENABLED
     // initialise camera mount
     camera_mount.init(serial_manager);

@@ -13,7 +13,28 @@ void Copter::init_precland()
 }
 void Copter::update_precland()
 {
-	copter.precland.update(current_loc.alt);
+
+	int16_t rng_alt = read_sonar();
+	int16_t final_alt;
+	
+	if(rng_alt != 0){ //Use rangefinder altitude if it is valid
+
+ #if SONAR_TILT_CORRECTION != 1
+    // correct alt for angle of the rangefinder if it hasn't arleady happened
+    float temp = ahrs.cos_pitch() * ahrs.cos_roll();
+    temp = max(temp, 0.707f);
+    rng_alt = rng_alt * temp;
+ #endif
+
+		final_alt = rng_alt;
+	}
+	else{ 			//use gps/baro alt otherwise
+		final_alt = current_loc.alt;
+	}
+
+
+	copter.precland.update(final_alt);
+
 	// log output
 	Log_Write_Precland();
 }

@@ -1622,8 +1622,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         case MAVLINK_MSG_ID_LANDING_TARGET:
             // configure or release parachute
             result = MAV_RESULT_ACCEPTED;
-            //DEBUG REMOVE FOR PR
-            //cliSerial->printf_P(PSTR("Got Landing target!!!"));
             copter.precland.handle_msg(msg);
 #endif
 

@@ -89,6 +89,7 @@ private:
     AP_Int8                     _enabled;           // enabled/disabled and behaviour
     AP_Int8                     _type;              // precision landing controller type
     AP_Float                    _speed_xy;          // maximum horizontal speed in cm/s
+    AP_Float                    _scale;             // scale the angular offset from the LANDING_TARGET msg 
 
     // internal variables
     float                       _dt;                // time difference (in seconds) between calls from the main program
