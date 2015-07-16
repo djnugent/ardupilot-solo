@@ -3,9 +3,7 @@
 #include <AC_PrecLand.h>
 #include <AC_PrecLand_Backend.h>
 #include <AC_PrecLand_Companion.h>
-#if IRLOCK == ENABLED
-#include <AC_PrecLand_IRLock.h>
-#endif
+//#include <AC_PrecLand_IRLock.h>
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AC_PrecLand::var_info[] PROGMEM = {
@@ -75,12 +73,12 @@ void AC_PrecLand::init()
         case PRECLAND_TYPE_COMPANION:
             _backend = new AC_PrecLand_Companion(*this, _backend_state);
             break;
-#if IRLOCK == ENABLED
+        /*
         // IR Lock
         case PRECLAND_TYPE_IRLOCK:
             _backend = new AC_PrecLand_IRLock(*this, _backend_state);
             break;
-#endif //IRLOCK == ENABLED
+        */
     }
 
     // init backend

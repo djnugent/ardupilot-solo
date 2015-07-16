@@ -17,14 +17,14 @@
 // declare backend classes
 class AC_PrecLand_Backend;
 class AC_PrecLand_Companion;
-class AC_PrecLand_IRLock;
+//class AC_PrecLand_IRLock;
 
 class AC_PrecLand
 {
     // declare backends as friends
     friend class AC_PrecLand_Backend;
     friend class AC_PrecLand_Companion;
-    friend class AC_PrecLand_IRLock;
+    //friend class AC_PrecLand_IRLock;
 
 public:
 

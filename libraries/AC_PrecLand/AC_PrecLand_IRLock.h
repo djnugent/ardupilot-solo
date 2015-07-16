@@ -2,16 +2,17 @@
 #ifndef __AC_PRECLAND_IRLOCK_H__
 #define __AC_PRECLAND_IRLOCK_H__
 
+/*
 #include <AP_Common.h>
 #include <AP_Math.h>
 #include <AC_PrecLand_Backend.h>    // Precision Landing backend
 #include <AP_IRLock.h>
-
+*/
 /*
  * AC_PrecLand_IRLock - implements precision landing using target vectors provided
  *                         by a companion computer (i.e. Odroid) communicating via MAVLink
  */
-
+/*
 class AC_PrecLand_IRLock : public AC_PrecLand_Backend
 {
 public:
@@ -36,7 +37,9 @@ public:
     void handle_msg(mavlink_message_t* msg);
 
 private:
-    AP_IRLock_PX4 irlock;
+    //AP_IRLock_PX4 irlock;
 
 };
+
+*/
 #endif	// __AC_PRECLAND_IRLOCK_H__

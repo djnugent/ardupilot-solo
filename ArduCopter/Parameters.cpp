@@ -849,6 +849,26 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
     GOBJECT(camera,           "CAM_", AP_Camera),
 #endif
 
+#if PRECISION_LANDING == ENABLED
+    // @Param: PRECLNDVEL_P
+    // @DisplayName: Precision landing velocity controller P gain
+    // @Description: Precision landing velocity controller P gain
+    // @Range: 0.100 5.000
+    // @User: Advanced
+    // @Param: PRECLNDVEL_I
+    // @DisplayName: Precision landing velocity controller I gain
+    // @Description: Precision landing velocity controller I gain
+    // @Range: 0.100 5.000
+    // @User: Advanced
+    // @Param: PRECLNDVEL_IMAX
+    // @DisplayName: Precision landing velocity controller I gain maximum
+    // @Description: Precision landing velocity controller I gain maximum
+    // @Range: 0 1000
+    // @Units: cm/s
+    // @User: Standard
+    GGROUP(pi_precland, "PLAND_", AC_PI_2D),
+#endif
+
     // @Group: RELAY_
     // @Path: ../libraries/AP_Relay/AP_Relay.cpp
     GOBJECT(relay,                  "RELAY_", AP_Relay),
@@ -869,9 +889,16 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
     // @Path: ../libraries/AP_LandingGear/AP_LandingGear.cpp
     GOBJECT(landinggear,    "LGR_", AP_LandingGear),
 
+#if PRECISION_LANDING == ENABLED
+    // @Group: LGR_
+    // @Path: ../libraries/AP_LandingGear/AP_LandingGear.cpp
+    GOBJECT(precland, "PRECLND_", AC_PrecLand),
+#endif
+
     // @Group: COMPASS_
     // @Path: ../libraries/AP_Compass/Compass.cpp
     GOBJECT(compass,        "COMPASS_", Compass),
+
 
     // @Group: INS_
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp

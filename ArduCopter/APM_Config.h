@@ -38,7 +38,7 @@
 //#define SPRAYER               ENABLED             // enable the crop sprayer feature (two ESC controlled pumps the speed of which depends upon the vehicle's horizontal velocity)
 
 #define PRECISION_LANDING       ENABLED
-//#define IRLOCK                ENABLED
+#define IRLOCK                	DISABLED
 
 // other settings
 //#define THROTTLE_IN_DEADBAND   100                // redefine size of throttle deadband in pwm (0 ~ 1000)
