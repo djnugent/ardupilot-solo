@@ -272,7 +272,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     AP_GROUPEND
 };
 
-AP_InertialSensor::AP_InertialSensor() :
+AP_InertialSensor::AP_InertialSensor(AP_AccelCal& accelcal) :
     _gyro_count(0),
     _accel_count(0),
     _backend_count(0),
@@ -299,6 +299,8 @@ AP_InertialSensor::AP_InertialSensor() :
     memset(_delta_angle_valid,0,sizeof(_delta_angle_valid));
     memset(_accel_startup_error_count,0,sizeof(_accel_startup_error_count));
     memset(_gyro_startup_error_count,0,sizeof(_gyro_startup_error_count));
+
+    accelcal.register_client(this);
 }
 
 

@@ -63,6 +63,12 @@ void AP_InertialSensor_Backend::_publish_delta_velocity(uint8_t instance, const 
     _imu._delta_velocity[instance] = delta_velocity;
     _imu._delta_velocity_dt[instance] = dt;
     _imu._delta_velocity_valid[instance] = true;
+
+    if (_imu._calibrators[instance].get_status() == ACCEL_CAL_COLLECTING_SAMPLE) {
+        Vector3f cal_sample = delta_velocity;
+        cal_sample.rotate_inverse(_imu._board_orientation);
+        _imu._calibrators[instance].new_sample(cal_sample, dt);
+    }
 }
 
 /*

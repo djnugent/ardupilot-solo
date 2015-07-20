@@ -23,6 +23,7 @@
 #include <stdint.h>
 #include <AP_HAL.h>
 #include <AP_Math.h>
+#include <AP_AccelCal.h>
 #include "AP_InertialSensor_UserInteract.h"
 
 class AP_InertialSensor_Backend;
@@ -40,12 +41,12 @@ class DataFlash_Class;
  * blog post describing the method: http://chionophilous.wordpress.com/2011/10/24/accelerometer-calibration-iv-1-implementing-gauss-newton-on-an-atmega/
  * original sketch available at http://rolfeschmidt.com/mathtools/skimetrics/adxl_gn_calibration.pde
  */
-class AP_InertialSensor
+class AP_InertialSensor : AP_AccelCal_Client
 {
     friend class AP_InertialSensor_Backend;
 
 public:
-    AP_InertialSensor();
+    AP_InertialSensor(AP_AccelCal& accelcal);
 
     enum Start_style {
         COLD_START = 0,
@@ -339,6 +340,10 @@ private:
     uint32_t _startup_ms;
 
     DataFlash_Class *_dataflash;
+
+    AccelCalibrator _calibrators[INS_MAX_INSTANCES];
+    void _acal_save_corrections() {}
+    AccelCalibrator* _acal_get_calibrator(uint8_t i) { return i<get_accel_count()?&(_calibrators[i]):NULL; }
 };
 
 #include "AP_InertialSensor_Backend.h"
