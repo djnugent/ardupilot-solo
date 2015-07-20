@@ -31,3 +31,7 @@ static void compass_cal_update() {
         }
     }
 }
+
+static void accel_cal_update() {
+    accelcal.update();
+}
