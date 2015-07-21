@@ -201,9 +201,6 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     ahrs.set_correct_centrifugal(true);
     hal.util->set_soft_armed(true);
 
-    // set hover throttle
-    motors.set_hover_throttle(g.throttle_mid);
-
 #if SPRAYER == ENABLED
     // turn off sprayer's test if on
     sprayer.test_pump(false);
@@ -536,6 +533,15 @@ bool Copter::pre_arm_checks(bool display_failure)
             return false;
         }
 #endif
+#if FRAME_CONFIG == HELI_FRAME
+        // check helicopter parameters
+        if (!motors.parameter_check()) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check Heli Parameters"));
+            }
+            return false;
+        }
+#endif // HELI_FRAME
     }
 
     // check throttle is above failsafe throttle
@@ -693,15 +699,15 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
     }
 
     // always check if rotor is spinning on heli
-    #if FRAME_CONFIG == HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME
     // heli specific arming check
-    if (!motors.allow_arming()){
+    if ((rsc_control_deglitched > 0) || !motors.allow_arming()){
         if (display_failure) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Rotor Control Engaged"));
         }
         return false;
     }
-    #endif  // HELI_FRAME
+#endif  // HELI_FRAME
 
     // succeed if arming checks are disabled
     if (g.arming_check == ARMING_CHECK_NONE) {
