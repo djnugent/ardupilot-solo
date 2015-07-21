@@ -1325,7 +1325,7 @@ bool AP_InertialSensor::get_new_trim(float& trim_roll, float &trim_pitch)
     return false;
 }
 
-bool AP_InertialSensor::get_fixed_mount_accel_cal_sample(uint8_t sample_num, Vector3f& ret)
+bool AP_InertialSensor::get_fixed_mount_accel_cal_sample(uint8_t sample_num, Vector3f& ret) const
 {
 #if CONFIG_HAL_BOARD != HAL_BOARD_PX4
     return false;
@@ -1338,7 +1338,7 @@ bool AP_InertialSensor::get_fixed_mount_accel_cal_sample(uint8_t sample_num, Vec
     return true;
 }
 
-bool AP_InertialSensor::get_primary_accel_cal_sample_avg(uint8_t sample_num, Vector3f& ret)
+bool AP_InertialSensor::get_primary_accel_cal_sample_avg(uint8_t sample_num, Vector3f& ret) const
 {
     uint8_t count = 0;
     Vector3f avg = Vector3f(0,0,0);

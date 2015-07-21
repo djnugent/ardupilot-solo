@@ -140,6 +140,10 @@ void AP_AccelCal::clear()
         _printf("Calibration FAILED");
     }
 
+    for(uint8_t i=0 ; i < _num_clients ; i++) {
+        _clients[i]._acal_cancelled();
+    }
+
     AccelCalibrator *cal;
     for(uint8_t i=0 ; (cal = get_calibrator(i))  ; i++) {
         cal->clear();

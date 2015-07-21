@@ -34,8 +34,8 @@ public:
     bool get_sample(uint8_t i, Vector3f& s) const;
     bool get_sample_corrected(uint8_t i, Vector3f& s) const;
     void set_tolerance(float tolerance) { _conf_tolerance = tolerance; }
-    enum accel_cal_status_t get_status() { return _status; }
-    uint8_t get_num_samples_collected() { return _samples_collected; }
+    enum accel_cal_status_t get_status() const { return _status; }
+    uint8_t get_num_samples_collected() const { return _samples_collected; }
 
     float get_fitness() { return _fitness; }
 

@@ -36,7 +36,7 @@ void AP_Gimbal::receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg)
     if (_gimbalParams.get_K_rate()!=0.0f){
         if (lockedToBody || isCopterFlipped() || !_ekf.getStatus() || _calibrator.running()){
             _gimbalParams.set_param(GMB_PARAM_GMB_POS_HOLD, 1);
-        }else{
+        } else {
             send_control(chan);
             _gimbalParams.set_param(GMB_PARAM_GMB_POS_HOLD, 0);
         }
@@ -99,10 +99,16 @@ void AP_Gimbal::extract_feedback(const mavlink_gimbal_report_t& report_msg)
     _measurement.joint_angles.y = report_msg.joint_el;
     _measurement.joint_angles.z = report_msg.joint_az;
 
+    _measurement.joint_angles += Vector3f(radians(20), radians(20),0);
+
     float alpha = constrain_float(_measurement.delta_time/(_measurement.delta_time+1.0f),0.0f,1.0f);
     _ang_vel_mag_filt += (_measurement.delta_angles.length()/_measurement.delta_time-_ang_vel_mag_filt)*alpha;
 
     if (_ang_vel_mag_filt < radians(10)) {
+        if (_calibrator.get_num_samples_collected() == 0){
+            _cal_joint_angle_sum += _measurement.joint_angles;
+            _cal_joint_angle_count++;
+        }
         _calibrator.new_sample(_measurement.delta_velocity,_measurement.delta_time);
     }
 
@@ -128,15 +134,15 @@ void AP_Gimbal::update_state()
     _ekf.getQuat(quatEst);
 
     // Add the control rate vectors
-    if(lockedToBody){
-        gimbalRateDemVec.zero();
-        gimbalRateDemVec += getGimbalRateBodyLock();
-    }else{
+    //if(lockedToBody){
+    gimbalRateDemVec.zero();
+    gimbalRateDemVec += getGimbalRateBodyLock();
+    /*}else{
         gimbalRateDemVec.zero();
         gimbalRateDemVec += getGimbalRateDemVecYaw(quatEst);
         gimbalRateDemVec += getGimbalRateDemVecTilt(quatEst);
         gimbalRateDemVec += getGimbalRateDemVecForward(quatEst);
-    }
+    }*/
 
     float gimbalRateDemVecLen = gimbalRateDemVec.length();
     if (gimbalRateDemVecLen > radians(400)) {
@@ -348,6 +354,41 @@ void AP_Gimbal::_acal_save_calibrations()
     _calibrator.get_calibration(bias,gain);
     _gimbalParams.set_accel_bias(bias);
     _gimbalParams.set_accel_gain(gain);
+
+    Vector3f vehicle_aligned;
+    Vector3f gimbal_aligned;
+    if (_ahrs.get_ins().get_fixed_mount_accel_cal_sample(0, vehicle_aligned) && _calibrator.get_sample_corrected(0, gimbal_aligned)) {
+        Vector3f v2g_312 = _cal_joint_angle_sum/_cal_joint_angle_count;
+        Quaternion v2g_quat;
+        v2g_quat.from_vector312(v2g_312.x,v2g_312.y,v2g_312.z);
+        Matrix3f Tvg;
+        v2g_quat.inverse().rotation_matrix(Tvg);
+        Vector3f vehicle_aligned_rotated = Tvg * vehicle_aligned;
+        Vector3f cross = vehicle_aligned_rotated%gimbal_aligned;
+        float dot = vehicle_aligned_rotated*gimbal_aligned;
+        Quaternion q(sqrt(sq(vehicle_aligned_rotated.length())*sq(gimbal_aligned.length()))+dot, cross.x, cross.y, cross.z);
+        q.normalize();
+
+        Matrix3f R;
+        q.rotation_matrix(R);
+        Vector3f d1 = R*vehicle_aligned_rotated;
+        Vector3f d2 = R.mul_transpose(vehicle_aligned_rotated);
+        Vector3f &v = vehicle_aligned_rotated;
+        Vector3f &g = gimbal_aligned;
+
+        ::printf("v  %.4f %.4f %.4f\n", v.x,v.y,v.z);
+        ::printf("g  %.4f %.4f %.4f\n", g.x,g.y,g.z);
+        ::printf("d1 %.4f %.4f %.4f\n", d1.x,d1.y,d1.z);
+        ::printf("d2 %.4f %.4f %.4f\n", d2.x,d2.y,d2.z);
+
+        float r,p,y;
+        q.to_vector312(r,p,y);
+        _gimbalParams.set_param(GMB_PARAM_GMB_OFF_JNT_X,r);
+        _gimbalParams.set_param(GMB_PARAM_GMB_OFF_JNT_Y,p);
+    }
+
+    _cal_joint_angle_sum.zero();
+    _cal_joint_angle_count = 0;
 }
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE

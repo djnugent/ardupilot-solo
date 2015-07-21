@@ -40,7 +40,9 @@ public:
         vehicle_to_gimbal_quat(),
         vehicle_to_gimbal_quat_filt(),
         filtered_joint_angles(),
-        _max_torque(5000.0f)
+        _max_torque(5000.0f),
+        _cal_joint_angle_sum(0,0,0),
+        _cal_joint_angle_count(0)
     {
         ahrs.get_ins().get_acal().register_client(this);
     }
@@ -122,6 +124,9 @@ private:
     AccelCalibrator _calibrator;
     void _acal_save_calibrations();
     AccelCalibrator* _acal_get_calibrator(uint8_t instance);
+    Vector3f _cal_joint_angle_sum;
+    uint32_t _cal_joint_angle_count;
+    void _acal_cancelled() { _cal_joint_angle_sum.zero(); _cal_joint_angle_count = 0; }
 
     mavlink_channel_t _chan;
 };
