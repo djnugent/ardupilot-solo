@@ -1,6 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #include "AccelCalibrator.h"
+#include <stdio.h>
 #include <AP_HAL.h>
 
 const extern AP_HAL::HAL& hal;
@@ -100,8 +101,31 @@ void AccelCalibrator::new_sample(Vector3f delta_velocity, float dt) {
     }
 }
 
+bool AccelCalibrator::get_sample(uint8_t i, Vector3f& s) const {
+    if (i >= _samples_collected) {
+        return false;
+    }
+    s = _sample_buffer[i].delta_velocity / _sample_buffer[i].delta_time;
+    return true;
+}
+bool AccelCalibrator::get_sample_corrected(uint8_t i, Vector3f& s) const {
+    if (_status != ACCEL_CAL_SUCCESS || !get_sample(i,s)) {
+        return false;
+    }
+
+    Matrix3f M (
+        _params.diag.x    , _params.offdiag.x , _params.offdiag.y,
+        _params.offdiag.x , _params.diag.y    , _params.offdiag.z,
+        _params.offdiag.y , _params.offdiag.z , _params.diag.z
+    );
+
+    s = M*(s+_params.offset);
+
+    return true;
+}
+
 void AccelCalibrator::check_for_timeout() {
-    static const uint32_t timeout = _conf_sample_time*2*1000;
+    static const uint32_t timeout = _conf_sample_time*2*1000 + 500;
     if (_status == ACCEL_CAL_COLLECTING_SAMPLE && hal.scheduler->millis() - _last_samp_frag_collected_ms > timeout) {
         set_status(ACCEL_CAL_FAILED);
     }
@@ -130,13 +154,14 @@ bool AccelCalibrator::accept_sample(const Vector3f& sample)
 {
     uint8_t faces = 2*_conf_num_samples-4;
     float theta = acosf(cosf((4.0f*M_PI_F/(3.0f*faces)) + M_PI_F/3.0f)/(1.0f-cosf((4.0f*M_PI_F/(3.0f*faces)) + M_PI_F/3.0f)));
-    theta *= 0.6f;
+    theta *= 0.5f;
     float min_distance = GRAVITY_MSS * 2*sinf(theta/2);
 
     for(uint8_t i=0; i < _samples_collected; i++) {
         Vector3f other_sample;
         get_sample(i, other_sample);
         if((other_sample - sample).length() < min_distance){
+            ::printf("sample acceptance\n");
             return false;
         }
     }
@@ -187,7 +212,6 @@ void AccelCalibrator::set_status(enum accel_cal_status_t status) {
                 break;
             }
 
-            _samples_collected = 0;
             _status = ACCEL_CAL_SUCCESS;
             break;
 

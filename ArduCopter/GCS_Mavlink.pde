@@ -1211,7 +1211,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 result = MAV_RESULT_UNSUPPORTED;
             } else if (packet.param5 == 1) {
                 accelcal.start(this);
-                result = MAV_RESULT_ACCEPTED;
             } else if (packet.param6 == 1) {
                 // compassmot calibration
                 result = mavlink_compassmot(chan);
@@ -1440,6 +1439,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_COMMAND_ACK:        // MAV ID: 77
     {
+        if (accelcal.get_status() == ACCEL_CAL_WAITING_FOR_ORIENTATION) {
+            accelcal.collect_sample();
+        }
         command_ack_counter++;
         break;
     }

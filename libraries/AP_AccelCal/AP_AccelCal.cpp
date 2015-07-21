@@ -2,6 +2,7 @@
 #include <stdarg.h>
 #include <GCS.h>
 #include <AP_HAL.h>
+#include <stdio.h>
 
 const extern AP_HAL::HAL& hal;
 
@@ -12,143 +13,174 @@ void AP_AccelCal::update()
         return;
     }
 
-    if (_gcs == NULL) {
-        clear();
-        return;
-    }
-
-    AccelCalibrator *cal;
-    for(uint8_t i=0; (cal = get_calibrator(i)); i++) {
-        cal->check_for_timeout();
-    }
-
-    accel_cal_status_t status = get_status();
-
-    if (status == ACCEL_CAL_FAILED) {
-        printf("Calibration FAILED");
-        clear();
-        return;
-    }
-
-    if (status == ACCEL_CAL_SUCCESS) {
-        // save
-        for(uint8_t i=0; i<_num_clients; i++) {
-            _clients[i]->_acal_save_corrections();
+    if (_started) {
+        update_status();
+        AccelCalibrator *cal;
+        uint8_t num_calibrators = 0;
+        for(uint8_t i=0; (cal = get_calibrator(i)); i++) {
+            num_calibrators++;
         }
-        printf("Calibration successful");
-        clear();
-        return;
-    }
+        if (num_calibrators != _num_calibrators) {
+            ::printf("1\n");
+            clear();
+            return;
+        }
 
-    uint8_t step;
-    // if we're waiting for orientation, ensure that all calibrators are on the same step
-    if (status == ACCEL_CAL_WAITING_FOR_ORIENTATION) {
-        cal = get_calibrator(0);
-        step = cal->get_num_samples_collected();
-
-        for(uint8_t i=1 ; (cal = get_calibrator(i))  ; i++) {
-            if (step != cal->get_num_samples_collected()) {
+        switch(_status) {
+            case ACCEL_CAL_NOT_STARTED:
+                ::printf("2\n");
                 clear();
                 return;
+            case ACCEL_CAL_WAITING_FOR_ORIENTATION: {
+                // if we're waiting for orientation, first ensure that all calibrators are on the same step
+                uint8_t step;
+                cal = get_calibrator(0);
+                step = cal->get_num_samples_collected()+1;
+
+                for(uint8_t i=1 ; (cal = get_calibrator(i))  ; i++) {
+                    if (step != cal->get_num_samples_collected()+1) {
+                        ::printf("3\n");
+                        clear();
+                        return;
+                    }
+                }
+
+                // if we're on a new step, print a message describing the step
+                if (step != _step) {
+                    _step = step;
+
+                    const prog_char_t *msg;
+                    switch (step) {
+                        case 1:
+                            msg = "level";
+                            break;
+                        case 2:
+                            msg = "on its LEFT side";
+                            break;
+                        case 3:
+                            msg = "on its RIGHT side";
+                            break;
+                        case 4:
+                            msg = "nose DOWN";
+                            break;
+                        case 5:
+                            msg = "nose UP";
+                            break;
+                        case 6:
+                            msg = "on its BACK";
+                            break;
+                        default:
+                            ::printf("4\n");
+                            clear();
+                            return;
+                    }
+                    _printf("Place vehicle %s and press any key.", msg);
+                }
+                break;
             }
-        }
-    }
+            case ACCEL_CAL_COLLECTING_SAMPLE:
+                // check for timeout
 
-    // if we've transitioned from collecting sample to waiting for orientation,
-    // print a message describing the orientation we want
-    if (_prev_status == ACCEL_CAL_COLLECTING_SAMPLE && status == ACCEL_CAL_WAITING_FOR_ORIENTATION) {
-        const prog_char_t *msg;
-        switch (step) {
-            case 0:
-                msg = "level";
-                break;
-            case 1:
-                msg = "on its LEFT side";
-                break;
-            case 2:
-                msg = "on its RIGHT side";
-                break;
-            case 3:
-                msg = "nose DOWN";
-                break;
-            case 4:
-                msg = "nose UP";
-                break;
-            case 5:
-                msg = "on its BACK";
-                break;
+                for(uint8_t i=0; (cal = get_calibrator(i)); i++) {
+                    cal->check_for_timeout();
+                }
+
+                update_status();
+
+                if (_status == ACCEL_CAL_FAILED) {
+                    ::printf("5\n");
+                    clear();
+                }
+                return;
+            case ACCEL_CAL_SUCCESS:
+                // save
+                for(uint8_t i=0; i<_num_clients; i++) {
+                    _clients[i]->_acal_save_calibrations();
+                }
+                _printf("Calibration successful");
+                clear();
+                return;
             default:
+            case ACCEL_CAL_FAILED:
+                ::printf("6\n");
                 clear();
                 return;
         }
-        printf("Place vehicle %s and press any key.", msg);
     }
-
-    _prev_status = status;
 }
 
 void AP_AccelCal::start(GCS_MAVLINK *gcs)
 {
-    if (gcs == NULL) {
+    if (gcs == NULL || _started) {
         return;
     }
+
+    _num_calibrators = 0;
 
     AccelCalibrator *cal;
     for(uint8_t i=0; (cal = get_calibrator(i)); i++) {
         cal->start(ACCEL_CAL_AXIS_ALIGNED_ELLIPSOID, 6, 0.5f);
+        _num_calibrators++;
     }
 
+    _started = true;
     _gcs = gcs;
+    _step = 0;
 
-    update();
-}
-
-void AP_AccelCal::collect_sample()
-{
-    AccelCalibrator *cal;
-    for(uint8_t i=0 ; (cal = get_calibrator(i))  ; i++) {
-        cal->collect_sample();
-    }
+    update_status();
 }
 
 void AP_AccelCal::clear()
 {
+    if (!_started) {
+        return;
+    }
+
+    if (_status != ACCEL_CAL_SUCCESS) {
+        _printf("Calibration FAILED");
+    }
+
     AccelCalibrator *cal;
     for(uint8_t i=0 ; (cal = get_calibrator(i))  ; i++) {
         cal->clear();
     }
 
     _gcs = NULL;
+
+    _step = 0;
+    _started = false;
+
+    update_status();
 }
 
-accel_cal_status_t AP_AccelCal::get_status() {
+void AP_AccelCal::collect_sample()
+{
+    if (_status != ACCEL_CAL_WAITING_FOR_ORIENTATION) {
+        return;
+    }
     AccelCalibrator *cal;
-
     for(uint8_t i=0 ; (cal = get_calibrator(i))  ; i++) {
-        if (cal->get_status() == ACCEL_CAL_FAILED) {
-            return ACCEL_CAL_FAILED;
-        }
+        cal->collect_sample();
+    }
+    update_status();
+}
+
+void AP_AccelCal::register_client(AP_AccelCal_Client* client) {
+    if (client == NULL || _num_clients == AP_ACCELCAL_MAX_NUM_CLIENTS) {
+        return;
     }
 
-    for(uint8_t i=0 ; (cal = get_calibrator(i))  ; i++) {
-        if (cal->get_status() == ACCEL_CAL_COLLECTING_SAMPLE) {
-            return ACCEL_CAL_COLLECTING_SAMPLE;
-        }
+    if (_started) {
+        clear();
     }
 
-    for(uint8_t i=0 ; (cal = get_calibrator(i))  ; i++) {
-        if (cal->get_status() == ACCEL_CAL_WAITING_FOR_ORIENTATION) {
-            return ACCEL_CAL_WAITING_FOR_ORIENTATION;
+    for(uint8_t i=0; i<_num_clients; i++) {
+        if(_clients[i] == client) {
+            return;
         }
     }
-
-    for(uint8_t i=0 ; (cal = get_calibrator(i))  ; i++) {
-        if (cal->get_status() == ACCEL_CAL_NOT_STARTED) {
-            return ACCEL_CAL_NOT_STARTED;
-        }
-    }
-
-    return ACCEL_CAL_SUCCESS;
+    _clients[_num_clients] = client;
+    _num_clients++;
 }
 
 AccelCalibrator* AP_AccelCal::get_calibrator(uint8_t index) {
@@ -164,16 +196,52 @@ AccelCalibrator* AP_AccelCal::get_calibrator(uint8_t index) {
     return NULL;
 }
 
-void AP_AccelCal::register_client(AP_AccelCal_Client* client) {
-    if (client == NULL || _num_clients == AP_ACCELCAL_MAX_NUM_CLIENTS) {
+void AP_AccelCal::update_status() {
+    AccelCalibrator *cal;
+
+    if (!get_calibrator(0)) {
+        // no calibrators
+        _status = ACCEL_CAL_NOT_STARTED;
         return;
     }
-    _clients[_num_clients] = client;
-    _num_clients++;
+
+    for(uint8_t i=0 ; (cal = get_calibrator(i))  ; i++) {
+        if (cal->get_status() == ACCEL_CAL_FAILED) {
+            _status = ACCEL_CAL_FAILED;
+            return;
+        }
+    }
+
+    for(uint8_t i=0 ; (cal = get_calibrator(i))  ; i++) {
+        if (cal->get_status() == ACCEL_CAL_COLLECTING_SAMPLE) {
+            _status = ACCEL_CAL_COLLECTING_SAMPLE;
+            return;
+        }
+    }
+
+    for(uint8_t i=0 ; (cal = get_calibrator(i))  ; i++) {
+        if (cal->get_status() == ACCEL_CAL_WAITING_FOR_ORIENTATION) {
+            _status = ACCEL_CAL_WAITING_FOR_ORIENTATION;
+            return;
+        }
+    }
+
+    for(uint8_t i=0 ; (cal = get_calibrator(i))  ; i++) {
+        if (cal->get_status() == ACCEL_CAL_NOT_STARTED) {
+            _status = ACCEL_CAL_NOT_STARTED;
+            return;
+        }
+    }
+
+    _status = ACCEL_CAL_SUCCESS;
+    return;
 }
 
 void AP_AccelCal::_printf(const char* fmt, ...)
 {
+    if (!_gcs) {
+        return;
+    }
     char msg[50];
     va_list ap;
     va_start(ap, fmt);

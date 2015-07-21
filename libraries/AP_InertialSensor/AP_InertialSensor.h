@@ -221,6 +221,13 @@ public:
     // enable/disable raw gyro/accel logging
     void set_raw_logging(bool enable) { _log_raw_data = enable; }
 
+    AP_AccelCal& get_acal() const { return _acal; }
+
+    bool get_fixed_mount_accel_cal_sample(uint8_t sample_num, Vector3f& ret);
+    bool get_primary_accel_cal_sample_avg(uint8_t sample_num, Vector3f& ret);
+
+    bool get_new_trim(float& trim_roll, float &trim_pitch);
+
 private:
 
     // load backend drivers
@@ -341,9 +348,15 @@ private:
 
     DataFlash_Class *_dataflash;
 
-    AccelCalibrator _calibrators[INS_MAX_INSTANCES];
-    void _acal_save_corrections() {}
-    AccelCalibrator* _acal_get_calibrator(uint8_t i) { return i<get_accel_count()?&(_calibrators[i]):NULL; }
+    AP_AccelCal& _acal;
+
+    AccelCalibrator _accel_calibrator[INS_MAX_INSTANCES];
+    void _acal_save_calibrations();
+    AccelCalibrator* _acal_get_calibrator(uint8_t i) { return i<get_accel_count()?&(_accel_calibrator[i]):NULL; }
+
+    float _trim_pitch;
+    float _trim_roll;
+    bool _new_trim;
 };
 
 #include "AP_InertialSensor_Backend.h"
